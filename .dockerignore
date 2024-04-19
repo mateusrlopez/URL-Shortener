@@ -1,16 +1,16 @@
-client/.idea
-.vscode
+**/.idea
+**/.vscode
 .git
 
-node_modules
-vendor
+client/node_modules
+server/vendor
 
-.gitignore
+**/.gitignore
 .dockerignore
-.env
-.env.example
+**/.env
+**/.env.example
 
-Dockerfile
+**/Dockerfile
 
 docker-compose.yaml
 README.md
