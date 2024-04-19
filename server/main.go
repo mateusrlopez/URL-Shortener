@@ -45,7 +45,7 @@ func main() {
 	recordsService := services.NewRecords(recordsRepository)
 	recordsHandler := handlers.NewRecords(recordsService)
 
-	router := http.NewRouter(s.Router.Context, recordsHandler)
+	router := http.NewRouter(s.Router.Context, s.CORS.AllowedOrigins, recordsHandler)
 
 	server := http.NewServer(router, s.Server.Port, s.Server.ReadTimeout, s.Server.WriteTimeout)
 

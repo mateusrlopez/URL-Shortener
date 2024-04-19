@@ -8,13 +8,13 @@ import (
 	"net/http"
 )
 
-func NewRouter(context string, handler *handlers.Records) http.Handler {
+func NewRouter(context string, allowedOrigins []string, handler *handlers.Records) http.Handler {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Logger)
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedOrigins: allowedOrigins,
 		AllowedMethods: []string{"OPTIONS", "POST", "GET"},
 		AllowedHeaders: []string{"Content-Type", "Accepts", "Origin"},
 		MaxAge:         300,

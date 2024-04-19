@@ -16,7 +16,7 @@ interface FindOneRecordResponse {
     key: string;
     url: string;
     accesses: number;
-    lastAccess: string;
+    lastAccess: string | null;
     createdAt: string;
 }
 
@@ -24,7 +24,7 @@ interface Record {
     shortURL: string;
     url: string;
     accesses: number;
-    lastAccess: Date;
+    lastAccess: Date | null;
     createdAt: Date;
 }
 
@@ -76,7 +76,7 @@ async function findOneRecordByKey(key: string) {
         shortURL: `short.ly/${data.key}`,
         url: data.url,
         accesses: data.accesses,
-        lastAccess: new Date(data.lastAccess),
+        lastAccess: data.lastAccess != null ? new Date(data.lastAccess) : null,
         createdAt: new Date(data.createdAt),
     };
 }
@@ -148,7 +148,7 @@ async function findOneRecordByKey(key: string) {
 
                 <div class="text-center ml-6">
                     <div class="font-bold">Last Access</div>
-                    <div class="text-teal-500">
+                    <div v-if="record.lastAccess" class="text-teal-500">
                         {{ DateTime.fromJSDate(record.lastAccess).toRelative() }}
                     </div>
                 </div>

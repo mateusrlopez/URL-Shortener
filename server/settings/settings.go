@@ -3,6 +3,10 @@ package settings
 import "time"
 
 type Settings struct {
+	CORS struct {
+		AllowedOrigins []string `required:"true" split_words:"true"`
+	}
+
 	Router struct {
 		Context string `default:"/api/v1"`
 	}
