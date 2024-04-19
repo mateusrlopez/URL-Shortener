@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  nginx:
+    image: url-shortener-proxy
+    build:
+      dockerfile: ./nginx/Dockerfile
+      context: .
+    restart: always
+    container_name: proxy-container
+    ports:
+      - "80:80"
+    networks:
+      - default
+    depends_on:
+      - backend
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongo-container
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: shortly
+      MONGO_INITDB_ROOT_PASSWORD: shortly
+    networks:
+      - default
+
+  backend:
+    image: url-shortener-server
+    build:
+      dockerfile: ./server/Dockerfile
+      context: .
+    restart: always
+    container_name: server-container
+    env_file:
+      - ./server/.env
+    networks:
+      - default
+    depends_on:
+      - mongo
+
+networks:
+  default:
+    driver: bridge
