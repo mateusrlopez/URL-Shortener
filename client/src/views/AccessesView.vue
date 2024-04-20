@@ -11,6 +11,7 @@ import { DateTime } from 'luxon';
 import { copyTextToClipboard } from '@/composables/clipboard';
 import { useRoute } from 'vue-router';
 import { openURL } from '@/composables/window-control';
+import ViewHeader from '@/components/ViewHeader.vue';
 
 interface FindOneRecordResponse {
     key: string;
@@ -84,15 +85,11 @@ async function findOneRecordByKey(key: string) {
 
 <template>
     <div class="w-3/4 md:w-1/2">
-        <div class="text-center">
-            <h1 class="text-5xl font-extrabold mb-4">Track Your Short URL</h1>
-            <p class="text-slate-500">
-                Enter your short.ly URL to track how many clicks it has received so far. Example:
-                short.ly/BbYSAlk
-            </p>
-        </div>
+        <ViewHeader
+            title="Track Your Short URL"
+            description="Enter your short.ly URL to track how many clicks it has received so far. Example: short.ly/BbYSAlk" />
         <form class="flex flex-col mt-12" @submit.prevent="onSubmit">
-            <div class="mb-6">
+            <div>
                 <input
                     v-model="shortURL"
                     type="text"
@@ -110,7 +107,7 @@ async function findOneRecordByKey(key: string) {
                     {{ error.$message }}
                 </div>
             </div>
-            <div class="text-center">
+            <div class="mt-6 text-center">
                 <button
                     type="submit"
                     class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 rounded w-full md:w-1/5 focus:outline-none">
@@ -145,7 +142,6 @@ async function findOneRecordByKey(key: string) {
                     <div class="font-bold">Total Accesses</div>
                     <div class="text-teal-500">{{ record.accesses }}</div>
                 </div>
-
                 <div class="text-center ml-6">
                     <div class="font-bold">Last Access</div>
                     <div v-if="record.lastAccess" class="text-teal-500">

@@ -1,7 +1,7 @@
 include .env
 export
 
-run-server:
+run:
 	go run main.go
 
 compose-up-v1:

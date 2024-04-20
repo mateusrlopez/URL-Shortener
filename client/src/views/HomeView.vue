@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { instance } from '@/composables/axios';
 import { copyTextToClipboard } from '@/composables/clipboard';
 import { required, url as urlValidator } from '@vuelidate/validators';
@@ -8,6 +8,8 @@ import GraphIcon from '@/components/GraphIcon.vue';
 import CopyIcon from '@/components/CopyIcon.vue';
 import AccessIcon from '@/components/AccessIcon.vue';
 import { openURL } from '@/composables/window-control';
+import ViewHeader from '@/components/ViewHeader.vue';
+import CloseIcon from '@/components/CloseIcon.vue';
 
 interface CreateRecordResponse {
     key: string;
@@ -19,7 +21,7 @@ interface Record {
     shortURL: string;
 }
 
-const records = reactive(new Array<Record>());
+const records = ref(new Array<Record>());
 
 const url = ref('');
 const rules = {
@@ -29,6 +31,15 @@ const rules = {
     },
 };
 const v$ = useVuelidate(rules, { url });
+
+onMounted(() => {
+    const storedRecords = localStorage.getItem('records');
+
+    if (storedRecords) {
+        const parsedRecords: Array<Record> = JSON.parse(storedRecords);
+        records.value.push(...parsedRecords);
+    }
+});
 
 async function onSubmit() {
     try {
@@ -43,24 +54,27 @@ async function onSubmit() {
         const key = data.key;
         const shortURL = `short.ly/${key}`;
 
-        records.push({ key, url: url.value, shortURL });
+        records.value.push({ key, url: url.value, shortURL });
 
         await copyTextToClipboard(shortURL);
+
+        localStorage.setItem('records', JSON.stringify(records.value));
     } catch (e) {
         console.log(e);
     }
+}
+
+function removeItemFromRecords(index: number) {
+    records.value.splice(index, 1);
+    localStorage.setItem('records', JSON.stringify(records.value));
 }
 </script>
 
 <template>
     <div class="w-3/4 md:w-1/2">
-        <div class="text-center">
-            <h1 class="text-5xl font-extrabold mb-4">URL Shortener</h1>
-            <p class="text-slate-500">
-                Create your short & memorable URLs in seconds with short.ly and even track down its
-                accesses.
-            </p>
-        </div>
+        <ViewHeader
+            title="URL Shortener"
+            description="Create your short & memorable URLs in seconds with short.ly and even track down its accesses." />
         <form class="flex flex-col mt-12" @submit.prevent="onSubmit">
             <div class="mb-6">
                 <input
@@ -94,7 +108,7 @@ async function onSubmit() {
                 :key="idx"
                 class="flex flex-row bg-white px-6 py-5 shadow-lg mb-4 rounded">
                 <div class="font-semibold">{{ record.url }}</div>
-                <div class="ml-auto font-bold text-teal-600">
+                <div class="ml-auto font-bold text-teal-500">
                     {{ record.shortURL }}
                 </div>
                 <div class="ml-6 cursor-pointer" @click="openURL(`http://${record.shortURL}`)">
@@ -108,6 +122,9 @@ async function onSubmit() {
                     :to="{ name: 'accesses', query: { key: record.key } }">
                     <GraphIcon />
                 </RouterLink>
+                <div class="ml-6 cursor-pointer" @click="removeItemFromRecords(idx)">
+                    <CloseIcon />
+                </div>
             </div>
         </div>
     </div>
