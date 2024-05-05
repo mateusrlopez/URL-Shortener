@@ -3,79 +3,58 @@ package repositories
 import (
 	"context"
 	"github.com/mateusrlopez/url-shortener-server/models"
-	"github.com/mateusrlopez/url-shortener-server/utils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
 type Records struct {
-	collection *mongo.Collection
+	database *gorm.DB
 }
 
-func NewRecords(collection *mongo.Collection) *Records {
+func NewRecords(database *gorm.DB) *Records {
 	return &Records{
-		collection: collection,
+		database: database,
 	}
 }
 
-func (r Records) Insert(url string) (string, error) {
+func (r Records) Insert(id int64, shortURLKey, longURL string) (models.Record, error) {
 	record := models.Record{
-		Key:       utils.GenerateUniqueKey(),
-		URL:       url,
-		CreatedAt: time.Now(),
+		ID:          id,
+		ShortURLKey: shortURLKey,
+		LongURL:     longURL,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	result, err := r.collection.InsertOne(ctx, &record)
-	if err != nil {
-		return "", err
-	}
-
-	return result.InsertedID.(string), nil
-}
-
-func (r Records) FindOneByKey(key string) (models.Record, error) {
-	var record models.Record
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	filter := bson.M{"_id": bson.M{"$eq": key}}
-
-	if err := r.collection.FindOne(ctx, filter).Decode(&record); err != nil {
+	if err := r.database.WithContext(ctx).Create(&record).Error; err != nil {
 		return models.Record{}, err
 	}
 
 	return record, nil
 }
 
-func (r Records) FindOneAndUpdateAccessesByKey(key string) (models.Record, error) {
+func (r Records) FindOneByKey(shortURLKey string) (models.Record, error) {
 	var record models.Record
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	filter := bson.M{"_id": bson.M{"$eq": key}}
-	update := bson.M{
-		"$set": bson.M{"last_access": time.Now()},
-		"$inc": bson.M{"accesses": 1},
-	}
-
-	after := options.After
-	opts := &options.FindOneAndUpdateOptions{
-		ReturnDocument: &after,
-	}
-
-	result := r.collection.FindOneAndUpdate(ctx, filter, update, opts)
-	if err := result.Err(); err != nil {
+	if err := r.database.WithContext(ctx).First(&record, "short_url_key = ?", shortURLKey).Error; err != nil {
 		return models.Record{}, err
 	}
 
-	if err := result.Decode(&record); err != nil {
+	return record, nil
+}
+
+func (r Records) FindOneAndUpdateAccessesByKey(shortURLKey string) (models.Record, error) {
+	var record models.Record
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	if err := r.database.WithContext(ctx).Model(&record).Clauses(clause.Returning{}).Where("short_url_key = ?", shortURLKey).Updates(map[string]interface{}{"last_access": time.Now(), "accesses": gorm.Expr("accesses + ?", 1)}).Error; err != nil {
 		return models.Record{}, err
 	}
 

@@ -3,29 +3,28 @@ package services
 import (
 	"github.com/mateusrlopez/url-shortener-server/models"
 	"github.com/mateusrlopez/url-shortener-server/repositories"
+	"github.com/mateusrlopez/url-shortener-server/utils"
 )
 
 type Records struct {
-	repository *repositories.Records
+	repository  *repositories.Records
+	idGenerator utils.IdGenerator
+	encryptor   utils.Encryptor
 }
 
-func NewRecords(repository *repositories.Records) *Records {
+func NewRecords(repository *repositories.Records, idGenerator utils.IdGenerator, encryptor utils.Encryptor) *Records {
 	return &Records{
-		repository: repository,
+		repository:  repository,
+		idGenerator: idGenerator,
+		encryptor:   encryptor,
 	}
 }
 
-func (s Records) Create(url string) (string, error) {
-	key, err := s.repository.Insert(url)
-	if err != nil {
-		return "", err
-	}
+func (s Records) Create(longURL string) (models.Record, error) {
+	id := s.idGenerator.GenerateId()
+	shortURLKey := s.encryptor.EncryptId(id)
 
-	return key, nil
-}
-
-func (s Records) FindOneByKey(key string) (models.Record, error) {
-	record, err := s.repository.FindOneByKey(key)
+	record, err := s.repository.Insert(id, shortURLKey, longURL)
 	if err != nil {
 		return models.Record{}, err
 	}
@@ -33,11 +32,20 @@ func (s Records) FindOneByKey(key string) (models.Record, error) {
 	return record, nil
 }
 
-func (s Records) FindOneAndRegisterAccessByKey(key string) (string, error) {
-	record, err := s.repository.FindOneAndUpdateAccessesByKey(key)
+func (s Records) FindOneByKey(shortURLKey string) (models.Record, error) {
+	record, err := s.repository.FindOneByKey(shortURLKey)
 	if err != nil {
-		return "", err
+		return models.Record{}, err
 	}
 
-	return record.URL, nil
+	return record, nil
+}
+
+func (s Records) FindOneAndRegisterAccessByKey(shortURLKey string) (models.Record, error) {
+	record, err := s.repository.FindOneAndUpdateAccessesByKey(shortURLKey)
+	if err != nil {
+		return models.Record{}, err
+	}
+
+	return record, nil
 }

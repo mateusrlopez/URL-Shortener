@@ -12,18 +12,21 @@ import { copyTextToClipboard } from '@/composables/clipboard';
 import { useRoute } from 'vue-router';
 import { openURL } from '@/composables/window-control';
 import ViewHeader from '@/components/ViewHeader.vue';
+import IconButton from '@/components/IconButton.vue';
 
 interface FindOneRecordResponse {
-    key: string;
-    url: string;
+    id: number;
+    shortURLKey: string;
+    longURL: string;
     accesses: number;
     lastAccess: string | null;
     createdAt: string;
 }
 
 interface Record {
+    id: number;
     shortURL: string;
-    url: string;
+    longURL: string;
     accesses: number;
     lastAccess: Date | null;
     createdAt: Date;
@@ -37,7 +40,7 @@ const rules = {
         required,
         shortURL: helpers.withMessage(
             'The field must be a valid short.ly URL',
-            helpers.regex(/^short\.ly\/([a-z])+$/i)
+            helpers.regex(/^short\.ly\/[a-z0-9]+$/i)
         ),
     },
 };
@@ -53,33 +56,34 @@ onMounted(async () => {
 });
 
 async function onSubmit() {
-    try {
-        const valid = v$.value.$validate();
+    const valid = v$.value.$validate();
 
-        if (!valid) return;
+    if (!valid) return;
 
-        const matches = shortURL.value.match(/[a-z]+$/i);
+    const matches = shortURL.value.match(/^[a-zA-Z0-9]+$/);
 
-        if (!matches) return;
+    if (!matches) return;
 
-        const key = matches[0];
+    const key = matches[0];
 
-        await findOneRecordByKey(key);
-    } catch (e) {
-        console.log(e);
-    }
+    await findOneRecordByKey(key);
 }
 
 async function findOneRecordByKey(key: string) {
-    const { data } = await instance.get<FindOneRecordResponse>(`/records/${key}`);
+    try {
+        const { data } = await instance.get<FindOneRecordResponse>(`/records/${key}`);
 
-    record.value = {
-        shortURL: `short.ly/${data.key}`,
-        url: data.url,
-        accesses: data.accesses,
-        lastAccess: data.lastAccess != null ? new Date(data.lastAccess) : null,
-        createdAt: new Date(data.createdAt),
-    };
+        record.value = {
+            id: data.id,
+            shortURL: `short.ly/${data.shortURLKey}`,
+            longURL: data.longURL,
+            accesses: data.accesses,
+            lastAccess: data.lastAccess != null ? new Date(data.lastAccess) : null,
+            createdAt: new Date(data.createdAt),
+        };
+    } catch (e) {
+        console.log(e);
+    }
 }
 </script>
 
@@ -117,22 +121,22 @@ async function findOneRecordByKey(key: string) {
         </form>
         <div
             v-if="Object.keys(record).length > 0"
-            class="w-full p-6 bg-white rounded shadow-lg flex flex-col mt-12">
-            <div class="flex flex-row">
+            class="w-full py-4 px-6 bg-white rounded shadow-lg flex flex-col mt-12">
+            <div class="flex flex-row items-center">
                 <div class="text-lg font-extrabold">{{ record.shortURL }}</div>
-                <div class="ml-auto cursor-pointer" @click="openURL(`http://${record.shortURL}`)">
-                    <AccessIcon />
-                </div>
-                <div class="ml-4 cursor-pointer" @click="copyTextToClipboard(record.shortURL)">
-                    <CopyIcon />
-                </div>
+                <IconButton class="ml-auto" @click="openURL(`http://${record.shortURL}`)">
+                    <AccessIcon class="h-6 w-6" />
+                </IconButton>
+                <IconButton @click="copyTextToClipboard(record.shortURL)">
+                    <CopyIcon class="h-6 w-6" />
+                </IconButton>
+            </div>
+            <div class="mt-4 flex flex-row font-semibold">
+                <LinkIcon class="h-6 w-6" />
+                <div class="ml-2">{{ record.longURL }}</div>
             </div>
             <div class="mt-4 flex flex-row">
-                <LinkIcon />
-                <div class="ml-2">{{ record.url }}</div>
-            </div>
-            <div class="mt-4 flex flex-row">
-                <CalendarIcon />
+                <CalendarIcon class="h-6 w-6" />
                 <div class="ml-2">
                     {{ DateTime.fromJSDate(record.createdAt).toLocaleString(DateTime.DATE_MED) }}
                 </div>

@@ -6,6 +6,7 @@ import (
 	"github.com/mateusrlopez/url-shortener-server/http/requests"
 	"github.com/mateusrlopez/url-shortener-server/http/responses"
 	"github.com/mateusrlopez/url-shortener-server/services"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
@@ -33,14 +34,15 @@ func (h Records) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key, err := h.service.Create(req.URL)
+	record, err := h.service.Create(req.LongURL)
 	if err != nil {
-		http.Error(w, "failed to create short url record", http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error")
+		http.Error(w, "failed to create record", http.StatusInternalServerError)
 		return
 	}
 
 	res := responses.CreateRecord{
-		Key: key,
+		ShortURLKey: record.ShortURLKey,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -56,16 +58,18 @@ func (h Records) FindOneByKey(w http.ResponseWriter, r *http.Request) {
 
 	record, err := h.service.FindOneByKey(key)
 	if err != nil {
+		log.Error().Err(err).Msg("error")
 		http.Error(w, "failed to retrieve record by key", http.StatusInternalServerError)
 		return
 	}
 
 	res := responses.FindOneRecord{
-		Key:        record.Key,
-		URL:        record.URL,
-		Accesses:   record.Accesses,
-		LastAccess: record.LastAccess,
-		CreatedAt:  record.CreatedAt,
+		ID:          record.ID,
+		ShortURLKey: record.ShortURLKey,
+		LongURL:     record.LongURL,
+		Accesses:    record.Accesses,
+		LastAccess:  record.LastAccess,
+		CreatedAt:   record.CreatedAt,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -78,11 +82,11 @@ func (h Records) FindOneByKey(w http.ResponseWriter, r *http.Request) {
 func (h Records) Redirect(w http.ResponseWriter, r *http.Request) {
 	key := chi.URLParam(r, "key")
 
-	url, err := h.service.FindOneAndRegisterAccessByKey(key)
+	record, err := h.service.FindOneAndRegisterAccessByKey(key)
 	if err != nil {
 		http.Error(w, "failed to retrieve or update record", http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, url, http.StatusFound)
+	http.Redirect(w, r, record.LongURL, http.StatusFound)
 }

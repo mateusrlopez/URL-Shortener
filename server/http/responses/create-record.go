@@ -1,5 +1,6 @@
 package responses
 
 type CreateRecord struct {
-	Key string `json:"key"`
+	ID int64 `json:"id"`
+	ShortURLKey string `json:"shortURLKey"`
 }

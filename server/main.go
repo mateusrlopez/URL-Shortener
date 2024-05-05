@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/bwmarrin/snowflake"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/mateusrlopez/url-shortener-server/clients"
 	"github.com/mateusrlopez/url-shortener-server/http"
@@ -9,6 +10,7 @@ import (
 	"github.com/mateusrlopez/url-shortener-server/repositories"
 	"github.com/mateusrlopez/url-shortener-server/services"
 	"github.com/mateusrlopez/url-shortener-server/settings"
+	"github.com/mateusrlopez/url-shortener-server/utils"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"os"
@@ -27,22 +29,27 @@ func init() {
 }
 
 func main() {
-	mongoClient, err := clients.NewMongoClient(s.Mongo.Uri, s.Mongo.ConnectionTimeout)
+	postgresClient, err := clients.NewPostgresClient(s.Postgres.DSN)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to connect to MongoDB instance")
+		log.Fatal().Err(err).Msg("failed to connect to the Postgres instance")
 	}
 
 	defer func() {
-		if err = clients.DisconnectMongoClient(mongoClient); err != nil {
-			log.Fatal().Err(err).Msg("failed to disconnect to MongoDB instance")
+		if err = clients.DisconnectPostgresClient(postgresClient); err != nil {
+			log.Fatal().Err(err).Msg("failed to disconnect to the Postgres instance")
 		}
 	}()
 
-	database := mongoClient.Database(s.Mongo.Database)
-	recordsCollection := database.Collection("records")
+	snowflakeNode, err := snowflake.NewNode(1)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize snowflake node")
+	}
 
-	recordsRepository := repositories.NewRecords(recordsCollection)
-	recordsService := services.NewRecords(recordsRepository)
+	snowflakeIdGenerator := utils.NewSnowflakeIdGenerator(snowflakeNode)
+	base62Encryptor := utils.NewBase62Encryptor()
+
+	recordsRepository := repositories.NewRecords(postgresClient)
+	recordsService := services.NewRecords(recordsRepository, snowflakeIdGenerator, base62Encryptor)
 	recordsHandler := handlers.NewRecords(recordsService)
 
 	router := http.NewRouter(s.Router.Context, s.CORS.AllowedOrigins, recordsHandler)

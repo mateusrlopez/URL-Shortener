@@ -1,13 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-    <svg
-        height="24px"
-        width="24px"
-        fill="#000000"
-        viewBox="-2 0 19 19"
-        xmlns="http://www.w3.org/2000/svg"
-        class="cf-icon-svg">
+    <svg fill="#000000" viewBox="-2 0 19 19" xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg">
         <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
         <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
         <g id="SVGRepo_iconCarrier">

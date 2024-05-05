@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { instance } from '@/composables/axios';
 import { copyTextToClipboard } from '@/composables/clipboard';
-import { required, url as urlValidator } from '@vuelidate/validators';
+import { required, url } from '@vuelidate/validators';
 import useVuelidate from '@vuelidate/core';
 import GraphIcon from '@/components/GraphIcon.vue';
 import CopyIcon from '@/components/CopyIcon.vue';
@@ -10,27 +10,33 @@ import AccessIcon from '@/components/AccessIcon.vue';
 import { openURL } from '@/composables/window-control';
 import ViewHeader from '@/components/ViewHeader.vue';
 import CloseIcon from '@/components/CloseIcon.vue';
+import IconButton from '@/components/IconButton.vue';
+import { useRouter } from 'vue-router';
 
 interface CreateRecordResponse {
-    key: string;
+    id: number;
+    shortURLKey: string;
 }
 
 interface Record {
-    key: string;
-    url: string;
+    id: number;
+    shortURLKey: string;
+    longURL: string;
     shortURL: string;
 }
 
+const router = useRouter();
+
 const records = ref(new Array<Record>());
 
-const url = ref('');
+const longURL = ref('');
 const rules = {
-    url: {
+    longURL: {
         required,
-        urlValidator,
+        url,
     },
 };
-const v$ = useVuelidate(rules, { url });
+const v$ = useVuelidate(rules, { longURL });
 
 onMounted(() => {
     const storedRecords = localStorage.getItem('records');
@@ -48,13 +54,13 @@ async function onSubmit() {
         if (!valid) return;
 
         const { data } = await instance.post<CreateRecordResponse>('/records', {
-            url: url.value,
+            longURL: longURL.value,
         });
 
-        const key = data.key;
-        const shortURL = `short.ly/${key}`;
+        const { id, shortURLKey } = data;
+        const shortURL = `short.ly/${shortURLKey}`;
 
-        records.value.push({ key, url: url.value, shortURL });
+        records.value.push({ id, shortURLKey, longURL: longURL.value, shortURL });
 
         await copyTextToClipboard(shortURL);
 
@@ -78,17 +84,17 @@ function removeItemFromRecords(index: number) {
         <form class="flex flex-col mt-12" @submit.prevent="onSubmit">
             <div class="mb-6">
                 <input
-                    v-model="url"
+                    v-model="longURL"
                     type="text"
                     placeholder="Type or paste your url here..."
                     autocomplete="off"
                     class="w-full px-3 py-4 rounded border placeholder-slate-300 text-slate-600 focus:outline-none"
                     :class="{
-                        'border-slate-300': !v$.url.$errors.length,
-                        'border-red-400': v$.url.$errors.length,
+                        'border-slate-300': !v$.longURL.$errors.length,
+                        'border-red-400': v$.longURL.$errors.length,
                     }" />
                 <div
-                    v-for="error in v$.url.$errors"
+                    v-for="error in v$.longURL.$errors"
                     :key="error.$uid"
                     class="ml-3 text-red-400 italic my-1.5">
                     {{ error.$message }}
@@ -105,26 +111,25 @@ function removeItemFromRecords(index: number) {
         <div v-if="records.length" class="w-full mt-12">
             <div
                 v-for="(record, idx) in records"
-                :key="idx"
-                class="flex flex-row bg-white px-6 py-5 shadow-lg mb-4 rounded">
-                <div class="font-semibold">{{ record.url }}</div>
+                :key="record.id"
+                class="flex flex-row items-center bg-white px-6 py-4 shadow-lg mb-4 rounded">
+                <div class="font-semibold">{{ record.longURL }}</div>
                 <div class="ml-auto font-bold text-teal-500">
                     {{ record.shortURL }}
                 </div>
-                <div class="ml-6 cursor-pointer" @click="openURL(`http://${record.shortURL}`)">
-                    <AccessIcon />
-                </div>
-                <div class="ml-2 cursor-pointer" @click="copyTextToClipboard(record.shortURL)">
-                    <CopyIcon />
-                </div>
-                <RouterLink
-                    class="ml-2 cursor-pointer"
-                    :to="{ name: 'accesses', query: { key: record.key } }">
-                    <GraphIcon />
-                </RouterLink>
-                <div class="ml-6 cursor-pointer" @click="removeItemFromRecords(idx)">
-                    <CloseIcon />
-                </div>
+                <IconButton class="ml-6" @click="openURL(`http://${record.shortURL}`)">
+                    <AccessIcon class="h-6 w-6" />
+                </IconButton>
+                <IconButton @click="copyTextToClipboard(record.shortURL)">
+                    <CopyIcon class="h-6 w-6" />
+                </IconButton>
+                <IconButton
+                    @click="router.push({ name: 'accesses', query: { key: record.shortURLKey } })">
+                    <GraphIcon class="h-6 w-6" />
+                </IconButton>
+                <IconButton class="ml-4" @click="removeItemFromRecords(idx)">
+                    <CloseIcon class="h-6 w-6" />
+                </IconButton>
             </div>
         </div>
     </div>

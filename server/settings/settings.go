@@ -17,9 +17,7 @@ type Settings struct {
 		WriteTimeout time.Duration `default:"10s"`
 	}
 
-	Mongo struct {
-		Uri               string        `required:"true"`
-		ConnectionTimeout time.Duration `default:"10s"`
-		Database          string        `required:"true"`
+	Postgres struct {
+		DSN string `required:"true"`
 	}
 }

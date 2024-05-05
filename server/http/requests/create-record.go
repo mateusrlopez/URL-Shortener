@@ -6,11 +6,11 @@ import (
 )
 
 type CreateRecord struct {
-	URL string `json:"url"`
+	LongURL string `json:"longURL"`
 }
 
 func (req CreateRecord) Validate() error {
 	return validation.ValidateStruct(&req,
-		validation.Field(&req.URL, validation.Required, is.RequestURL),
+		validation.Field(&req.LongURL, validation.Required, is.RequestURL),
 	)
 }

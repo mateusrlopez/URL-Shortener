@@ -1,13 +1,16 @@
 package models
 
-import (
-	"time"
-)
+import "time"
 
 type Record struct {
-	Key        string `bson:"_id"`
-	URL        string `bson:"url"`
-	Accesses   uint
-	LastAccess *time.Time `bson:"last_access"`
-	CreatedAt  time.Time  `bson:"created_at"`
+	ID          int64      `gorm:"column:id;primaryKey"`
+	ShortURLKey string     `gorm:"column:short_url_key"`
+	LongURL     string     `gorm:"column:long_url"`
+	Accesses    uint       `gorm:"column:accesses"`
+	LastAccess  *time.Time `gorm:"column:last_access;type:timestamp"`
+	CreatedAt   time.Time  `gorm:"column:created_at;type:timestamp"`
+}
+
+func (Record) TableName() string {
+	return "records"
 }
