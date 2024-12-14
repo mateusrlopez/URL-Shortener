@@ -15,17 +15,18 @@ services:
     depends_on:
       - backend
 
-  mongo:
-    image: mongo
+  postgres:
+    image: postgres
+    container_name: postgresql-container
     restart: always
-    container_name: mongo-container
     ports:
-      - "27017:27017"
+      - "5432:5432"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: shortly
-      MONGO_INITDB_ROOT_PASSWORD: shortly
-    networks:
-      - default
+      POSTGRES_USER: shortly
+      POSTGRES_PASSWORD: shortly
+      POSTGRES_DB: shortener
+    volumes:
+      - "./.docker/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql"
 
   backend:
     image: url-shortener-server
